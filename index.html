@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vending machine</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --display-bg: #222;
+            --display-text: #0f0;
+        }
+
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .vending-machine-container {
+            background: white;
+            width: 100%;
+            max-width: 800px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+
+        .display-panel {
+            background-color: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .lcd-screen {
+            background-color: var(--display-bg);
+            color: var(--display-text);
+            font-family: 'Courier New', Courier, monospace;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 1.2rem;
+            margin: 10px 0;
+            border: 2px solid #555;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .balance-screen {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            padding: 20px;
+            background: #ecf0f1;
+            box-sizing: border-box;
+        }
+
+        .product-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .product-card.out-of-stock {
+            opacity: 0.6;
+            background-color: #eee;
+        }
+
+        .emoji {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .info h3 { margin: 5px 0; }
+
+        .price {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 1.2rem;
+            margin: 5px 0;
+        }
+
+        .stock {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            margin: 0;
+        }
+
+        button { cursor: pointer; }
+
+        .buy-btn {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .buy-btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .control-panel {
+            padding: 20px;
+            background: #bdc3c7;
+            border-top: 4px solid #95a5a6;
+            text-align: center;
+        }
+
+        .coin-slot {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .coin-btn {
+            background: #d4af37;
+            border: 2px solid #b7950b;
+            border-radius: 50%;
+            width: 65px;
+            height: 65px;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #b7950b;
+            font-size: 0.9rem;
+        }
+
+        .coin-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        .return-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+        }
+
+        .admin-footer {
+            padding: 15px;
+            background: #34495e;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .admin-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .admin-controls button {
+            padding: 5px 10px;
+            background: #7f8c8d;
+            color: white;
+            border: none;
+            border-radius: 3px;
+        }
+
+        .admin-controls .delete-btn {
+            background: #c0392b;
+        }
+
+        .add-product-form {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #7f8c8d;
+            display: none;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .add-product-form input {
+            padding: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .product-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .add-product-form {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="vending-machine-container">
+
+    <div class="display-panel">
+        <h1 class="title">Vending machine</h1>
+        <div class="lcd-screen" id="lcd-message">Loading System...</div>
+        <div class="balance-screen">
+            Current Balance: <span id="balance-display">€0.00</span>
+        </div>
+    </div>
+
+    <div class="product-grid" id="product-grid">
+    </div>
+
+    <div class="control-panel">
+        <h3>Insert Coin</h3>
+        <div class="coin-slot">
+            <button class="coin-btn" data-value="5">5c</button>
+            <button class="coin-btn" data-value="10">10c</button>
+            <button class="coin-btn" data-value="20">20c</button>
+            <button class="coin-btn" data-value="50">50c</button>
+            <button class="coin-btn" data-value="100">€1</button>
+            <button class="coin-btn" data-value="200">€2</button>
+        </div>
+        <button class="return-btn" id="return-coins-btn">Return Coins</button>
+    </div>
+	
+    <div class="admin-footer">
+        <label>
+            <input type="checkbox" id="admin-toggle"> 
+            Maintenance Mode (CRUD)
+        </label>
+        
+        <form class="add-product-form" id="add-product-form">
+            <h4>Add New Product</h4>
+            <input type="text" id="new-name" placeholder="Name" required />
+            <input type="number" id="new-price" step="0.01" placeholder="Price (€)" required />
+            <button type="submit">Add</button>
+        </form>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    const appState = {
+        products: [],
+        balance: 0,
+        isAdmin: false
+    };
+
+    const MAX_INVENTORY = 15;
+
+    const mockFetchProducts = () => {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                resolve([
+                    { id: 1, name: "Espresso", price: 160, stock: 10, emoji: "☕" },
+                    { id: 2, name: "Croissant", price: 220, stock: 8, emoji: "🥐" },
+                    { id: 3, name: "Chocolate", price: 150, stock: 15, emoji: "🍫" },
+                    { id: 4, name: "Water", price: 90, stock: 5, emoji: "💧" },
+                ]);
+            }, 800);
+        });
+    };
+    
+    const formatMoney = (cents) => {
+        return `€${(cents / 100).toFixed(2)}`;
+    };
+
+    const updateDisplay = (message) => {
+        if(message) $('#lcd-message').text(message);
+        $('#balance-display').text(formatMoney(appState.balance));
+    };
+
+    const renderProducts = () => {
+        const grid = $('#product-grid');
+        grid.empty();
+
+        appState.products.forEach(p => {
+            let buttonHtml = '';
+            let stockClass = p.stock === 0 ? 'out-of-stock' : '';
+
+            if (appState.isAdmin) {
+                // Admin Buttons
+                buttonHtml = `
+                    <div class="admin-controls">
+                        <button class="stock-btn" data-id="${p.id}" data-change="-1">-</button>
+                        <button class="stock-btn" data-id="${p.id}" data-change="1">+</button>
+                        <button class="delete-btn" data-id="${p.id}">x</button>
+                    </div>
+                `;
+            } else {
+                // Buy Button
+                const disabled = p.stock === 0 ? 'disabled' : '';
+                const btnText = p.stock === 0 ? 'Sold Out' : 'Buy';
+                buttonHtml = `
+                    <button class="buy-btn" data-id="${p.id}" ${disabled}>
+                        ${btnText}
+                    </button>
+                `;
+            }
+
+            const card = `
+                <div class="product-card ${stockClass}">
+                    <div class="emoji">${p.emoji}</div>
+                    <div class="info">
+                        <h3>${p.name}</h3>
+                        <p class="price">${formatMoney(p.price)}</p>
+                        <p class="stock">Qty: ${p.stock}</p>
+                    </div>
+                    ${buttonHtml}
+                </div>
+            `;
+            grid.append(card);
+        });
+    };
+	
+    mockFetchProducts().then((data) => {
+        appState.products = data;
+        renderProducts();
+        updateDisplay("Welcome! Please insert coins.");
+    });
+
+    // Insert Coin
+    $('.coin-btn').click(function() {
+        const value = parseInt($(this).data('value'));
+        appState.balance += value;
+        updateDisplay(`Credit: ${formatMoney(appState.balance)}`);
+    });
+
+    // Return Coins
+    $('#return-coins-btn').click(function() {
+        if (appState.balance === 0) {
+            updateDisplay("No change to return.");
+            return;
+        }
+
+        let remaining = appState.balance;
+        let changeLog = [];
+        const denominations = [200, 100, 50, 20, 10, 5];
+
+        denominations.forEach(coin => {
+            while (remaining >= coin) {
+                changeLog.push(formatMoney(coin));
+                remaining -= coin;
+            }
+        });
+
+        updateDisplay(`Returned: ${changeLog.join(', ')}`);
+        appState.balance = 0;
+        $('#balance-display').text(formatMoney(0));
+    });
+
+    // Buy Product
+    $('#product-grid').on('click', '.buy-btn', function() {
+        const id = $(this).data('id');
+        const product = appState.products.find(p => p.id === id);
+
+        if (!product) return;
+
+        if (product.stock <= 0) {
+            updateDisplay("Out of Stock!");
+            return;
+        }
+
+        if (appState.balance < product.price) {
+            const needed = product.price - appState.balance;
+            updateDisplay(`Need ${formatMoney(needed)} more.`);
+            return;
+        }
+
+        // Transaction Success
+        product.stock -= 1;
+        const change = appState.balance - product.price;
+        appState.balance = 0;
+
+        let msg = `Dispensing ${product.name}.`;
+        if (change > 0) msg += ` Change returned: ${formatMoney(change)}`;
+        
+        updateDisplay(msg);
+        renderProducts(); // Re-render to update stock count/button state
+    });
+
+    // --- ADMIN / CRUD LOGIC ---
+
+    // Toggle Admin Mode
+    $('#admin-toggle').change(function() {
+        appState.isAdmin = $(this).is(':checked');
+        if (appState.isAdmin) {
+            $('.add-product-form').css('display', 'flex');
+        } else {
+            $('.add-product-form').hide();
+        }
+        renderProducts(); // Re-render to switch between Buy buttons and Admin controls
+    });
+
+    // Update Stock (+/-)
+    $('#product-grid').on('click', '.stock-btn', function() {
+        const id = $(this).data('id');
+        const change = parseInt($(this).data('change'));
+        const product = appState.products.find(p => p.id === id);
+
+        const newStock = product.stock + change;
+        
+        if (newStock < 0) return;
+        if (newStock > MAX_INVENTORY) {
+            alert(`Max inventory is ${MAX_INVENTORY}`);
+            return;
+        }
+
+        product.stock = newStock;
+        renderProducts();
+    });
+
+    // Delete Product
+    $('#product-grid').on('click', '.delete-btn', function() {
+        const id = $(this).data('id');
+        if(confirm("Delete this product?")) {
+            appState.products = appState.products.filter(p => p.id !== id);
+            renderProducts();
+        }
+    });
+
+    // Add Product
+    $('#add-product-form').submit(function(e) {
+        e.preventDefault();
+        const name = $('#new-name').val();
+        const priceVal = parseFloat($('#new-price').val());
+
+        if (!name || isNaN(priceVal)) return;
+
+        const newProduct = {
+            id: Date.now(),
+            name: name,
+            price: Math.round(priceVal * 100), // Convert to cents
+            stock: 5,
+            emoji: "📦"
+        };
+
+        appState.products.push(newProduct);
+        renderProducts();
+        
+        // Reset form
+        $('#new-name').val('');
+        $('#new-price').val('');
+    });
+
+});
+</script>
+
+</body>
+</html>

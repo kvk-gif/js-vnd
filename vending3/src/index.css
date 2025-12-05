@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 220 17% 12%;
+    --foreground: 180 5% 95%;
+
+    --card: 220 15% 16%;
+    --card-foreground: 180 5% 95%;
+
+    --popover: 220 15% 16%;
+    --popover-foreground: 180 5% 95%;
+
+    --primary: 173 58% 39%;
+    --primary-foreground: 180 5% 98%;
+
+    --secondary: 24 95% 53%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 220 15% 22%;
+    --muted-foreground: 180 5% 65%;
+
+    --accent: 173 80% 40%;
+    --accent-foreground: 180 5% 98%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 15% 25%;
+    --input: 220 15% 25%;
+    --ring: 173 58% 39%;
+
+    --radius: 0.75rem;
+
+    /* Vending machine specific colors */
+    --machine-glass: 173 30% 20%;
+    --machine-frame: 220 17% 10%;
+    --coin-gold: 45 100% 51%;
+    --coin-silver: 0 0% 75%;
+    --display-bg: 220 20% 8%;
+    --display-text: 173 80% 60%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(173 58% 39%), hsl(173 80% 50%));
+    --gradient-secondary: linear-gradient(135deg, hsl(24 95% 53%), hsl(14 90% 55%));
+    --gradient-machine: linear-gradient(180deg, hsl(220 17% 14%), hsl(220 17% 10%));
+    
+    /* Shadows */
+    --shadow-glow: 0 0 20px hsl(173 80% 40% / 0.3);
+    --shadow-strong: 0 10px 40px -10px hsl(0 0% 0% / 0.5);
+    
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  }
+  
+  /* Custom animations */
+  @keyframes coin-drop {
+    0% {
+      transform: translateY(-100%) rotate(0deg);
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(0) rotate(360deg);
+      opacity: 0;
+    }
+  }
+  
+  @keyframes product-dispense {
+    0% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(200px);
+      opacity: 0;
+    }
+  }
+  
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px hsl(173 80% 40% / 0.3);
+    }
+    50% {
+      box-shadow: 0 0 30px hsl(173 80% 40% / 0.6);
+    }
+  }
+  
+  .animate-coin-drop {
+    animation: coin-drop 0.8s ease-out;
+  }
+  
+  .animate-product-dispense {
+    animation: product-dispense 1s ease-in;
+  }
+  
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+}
